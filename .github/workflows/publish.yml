@@ -15,3 +15,9 @@ jobs:
       - uses: actions/checkout@v6
       - name: Deploy to Connect
         uses: posit-dev/connect-actions/deploy@main
+        with:
+          # No API key: the action exchanges the job's OIDC token for a
+          # short-lived credential via trusted publishing. The content item
+          # must already exist -- this publishes to it, it does not create it.
+          connect-server: https://connect.titans.int.bayer.com/connect
+          content-guid: b0fa638a-0323-4696-b67b-1149c854824e

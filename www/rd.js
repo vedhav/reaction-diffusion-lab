@@ -73,6 +73,74 @@
   // --- model -------------------------------------------------------------
 
   /** Largest k that still admits a non-trivial steady state, for a given f. */
+  // The parameter map is drawn on a canvas, so it cannot inherit the CSS
+  // custom properties the rest of the UI themes itself with. One entry per
+  // theme, read fresh on every draw.
+  var MAP_COLORS = {
+    dark: {
+      base: "#0b1119",
+      zone: ["#15304a", "#1c4c63", "#123043"],
+      curve: "rgba(125, 211, 252, 0.55)",
+      grid: "rgba(148, 163, 184, 0.10)",
+      axis: "rgba(148, 163, 184, 0.75)",
+      dot: "rgba(226, 232, 240, 0.55)",
+      dotActive: "#fbbf24",
+      crosshair: "rgba(251, 191, 36, 0.35)",
+      ring: "#fde68a",
+      labelBg: "rgba(2, 6, 12, 0.85)",
+      labelText: "#fde68a"
+    },
+    light: {
+      base: "#eef4fa",
+      zone: ["#cbe2f4", "#aed4ee", "#c6e0f3"],
+      curve: "rgba(3, 105, 161, 0.65)",
+      grid: "rgba(15, 23, 42, 0.09)",
+      axis: "rgba(15, 23, 42, 0.55)",
+      dot: "rgba(15, 23, 42, 0.45)",
+      dotActive: "#b45309",
+      crosshair: "rgba(180, 83, 9, 0.40)",
+      ring: "#92400e",
+      labelBg: "rgba(255, 255, 255, 0.92)",
+      labelText: "#7c2d12"
+    }
+  };
+
+  var THEME_KEY = "rd-theme";
+
+  /** Remembered choice, else the OS preference, else night. */
+  function preferredTheme() {
+    try {
+      var saved = window.localStorage.getItem(THEME_KEY);
+      if (saved === "light" || saved === "dark") return saved;
+    } catch (e) {
+      // Private browsing and blocked storage both land here; fall through.
+    }
+    return window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  }
+
+  function storeTheme(theme) {
+    try {
+      window.localStorage.setItem(THEME_KEY, theme);
+    } catch (e) {
+      // Not worth telling anyone about: the theme still applies this session.
+    }
+  }
+
+  // Applied here rather than in init() so the page is never painted in the
+  // wrong theme: this file is deferred, so it runs before first paint.
+  document.documentElement.setAttribute("data-theme", preferredTheme());
+
+  /** The theme currently applied to <html>; night unless told otherwise. */
+  function currentTheme() {
+    return document.documentElement.getAttribute("data-theme") === "light" ?
+      "light" : "dark";
+  }
+
+  function mapColors() {
+    return MAP_COLORS[currentTheme()];
+  }
+
   function killLimit(f) {
     return Math.sqrt(f) / 2 - f;
   }
@@ -326,16 +394,17 @@
 
   ParameterMap.prototype.drawBackground = function (ctx) {
     var w = this.size.w, h = this.size.h;
+    var colors = mapColors();
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = "#0b1119";
+    ctx.fillStyle = colors.base;
     ctx.fillRect(0, 0, w, h);
 
     // The self-sustaining region, filled column by column from the exact
     // boundary k = sqrt(f)/2 - f down to the bottom of the chart.
     var gradient = ctx.createLinearGradient(0, 0, w, h);
-    gradient.addColorStop(0, "#15304a");
-    gradient.addColorStop(0.5, "#1c4c63");
-    gradient.addColorStop(1, "#123043");
+    gradient.addColorStop(0, colors.zone[0]);
+    gradient.addColorStop(0.5, colors.zone[1]);
+    gradient.addColorStop(1, colors.zone[2]);
     ctx.fillStyle = gradient;
     ctx.beginPath();
     ctx.moveTo(0, h);
@@ -348,12 +417,12 @@
     ctx.closePath();
     ctx.fill();
 
-    ctx.strokeStyle = "rgba(125, 211, 252, 0.55)";
+    ctx.strokeStyle = colors.curve;
     ctx.lineWidth = 1.25;
     ctx.stroke();
 
     // Grid lines.
-    ctx.strokeStyle = "rgba(148, 163, 184, 0.10)";
+    ctx.strokeStyle = colors.grid;
     ctx.lineWidth = 1;
     for (var i = 1; i < 5; i++) {
       ctx.beginPath();
@@ -362,7 +431,7 @@
       ctx.stroke();
     }
 
-    ctx.fillStyle = "rgba(148, 163, 184, 0.75)";
+    ctx.fillStyle = colors.axis;
     ctx.font = "10px ui-monospace, SFMono-Regular, Menlo, monospace";
     ctx.textBaseline = "bottom";
     ctx.fillText("f →", w - 22, h - 4);
@@ -378,6 +447,7 @@
   ParameterMap.prototype.draw = function () {
     if (!this.size) return;
     var ctx = this.size.ctx, w = this.size.w, h = this.size.h;
+    var colors = mapColors();
     var dpr = window.devicePixelRatio || 1;
 
     ctx.clearRect(0, 0, w, h);
@@ -390,13 +460,13 @@
       var active = i === this.hover;
       ctx.beginPath();
       ctx.arc(p.x, p.y, active ? 4.5 : 3, 0, Math.PI * 2);
-      ctx.fillStyle = active ? "#fbbf24" : "rgba(226, 232, 240, 0.55)";
+      ctx.fillStyle = active ? colors.dotActive : colors.dot;
       ctx.fill();
     }
 
     // Crosshair for the current parameters.
     var c = this.toPixels(this.f, this.k);
-    ctx.strokeStyle = "rgba(251, 191, 36, 0.35)";
+    ctx.strokeStyle = colors.crosshair;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(c.x, 0); ctx.lineTo(c.x, h);
@@ -405,7 +475,7 @@
 
     ctx.beginPath();
     ctx.arc(c.x, c.y, 5.5, 0, Math.PI * 2);
-    ctx.strokeStyle = "#fde68a";
+    ctx.strokeStyle = colors.ring;
     ctx.lineWidth = 2;
     ctx.stroke();
 
@@ -417,9 +487,9 @@
       var textWidth = ctx.measureText(preset.name).width;
       var bx = clamp(pt.x + 8, 2, w - textWidth - 12);
       var by = clamp(pt.y - 22, 2, h - 20);
-      ctx.fillStyle = "rgba(2, 6, 12, 0.85)";
+      ctx.fillStyle = colors.labelBg;
       ctx.fillRect(bx, by, textWidth + 10, 17);
-      ctx.fillStyle = "#fde68a";
+      ctx.fillStyle = colors.labelText;
       ctx.textBaseline = "top";
       ctx.fillText(preset.name, bx + 5, by + 3);
     }
@@ -491,6 +561,7 @@
     if (window.jQuery && window.Shiny) {
       jQuery(document).on("shiny:connected", function () {
         connected = true;
+        sendInput("theme", currentTheme());
         pushState();
       });
       Shiny.addCustomMessageHandler("rd:apply", applyState);
@@ -568,6 +639,20 @@
       if (node) node.textContent = text;
     }
 
+    /** Switch theme: <html> attribute, button label, canvas map, server. */
+    function applyTheme(theme) {
+      document.documentElement.setAttribute("data-theme", theme);
+      storeTheme(theme);
+      var button = document.querySelector('[data-action="theme"]');
+      if (button) {
+        button.textContent = theme === "light" ? "Night" : "Day";
+        button.setAttribute("aria-label",
+          theme === "light" ? "Switch to the night theme" : "Switch to the day theme");
+      }
+      map.resize();          // repaints the cached background in the new palette
+      sendInput("theme", theme);
+    }
+
     function setRunning(running) {
       state.running = running;
       var button = document.querySelector('[data-action="toggle"]');
@@ -642,6 +727,9 @@
 
     var actions = {
       toggle: function () { setRunning(!state.running); },
+      theme: function () {
+        applyTheme(currentTheme() === "light" ? "dark" : "light");
+      },
       reset: function () { reactor.seedCentre(); render(); },
       clear: function () { reactor.clear(); render(); },
       random: function () { randomParameters(); },
@@ -732,6 +820,7 @@
     });
 
     map.setValue(state.f, state.k);
+    applyTheme(currentTheme());
     syncLabels();
     resize();
     requestAnimationFrame(frame);

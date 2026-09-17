@@ -169,7 +169,10 @@ ui <- function(request) {
           tool_button("clear", "Clear"),
           tool_button("random", "Surprise me"),
           tool_button("snapshot", "Save PNG"),
-          tool_button("share", "Copy link")
+          tool_button("share", "Copy link"),
+          # Label and pressed state are owned by rd.js, which knows the theme
+          # before the server does (it restores it from localStorage).
+          tool_button("theme", "Day")
         )
       ),
 
@@ -254,6 +257,17 @@ server <- function(input, output, session) {
   # The sparkline redraws far less often than samples arrive.
   history_throttled <- throttle(reactive(history()), 500)
 
+  # The plot is drawn server-side, so it cannot pick up the CSS variables the
+  # rest of the UI themes itself with; rd.js reports the active theme instead.
+  SPARK_COLOURS <- list(
+    dark  = list(fill = "#1d3a4d", line = "#38bdf8", tip = "#7dd3fc", label = "#5a6472"),
+    light = list(fill = "#cbe2f4", line = "#0369a1", tip = "#0284c7", label = "#64748b")
+  )
+
+  spark_colours <- reactive({
+    SPARK_COLOURS[[if (identical(input$theme, "light")) "light" else "dark"]]
+  })
+
   output$readout <- renderUI({
     state <- sim()
     f <- state$f
@@ -288,12 +302,13 @@ server <- function(input, output, session) {
   output$activity <- renderPlot(
     {
       h <- history_throttled()
+      col <- spark_colours()
       op <- par(mar = c(0, 0, 0, 0), bg = NA)
       on.exit(par(op), add = TRUE)
 
       if (length(h) < 2) {
         plot.new()
-        text(0.5, 0.5, "measuring…", col = "#5a6472", cex = 1.1)
+        text(0.5, 0.5, "measuring…", col = col$label, cex = 1.1)
         return(invisible(NULL))
       }
 
@@ -305,9 +320,9 @@ server <- function(input, output, session) {
       plot(x, h, type = "n", axes = FALSE, xlab = "", ylab = "",
            xaxs = "i", yaxs = "i", ylim = ylim)
       polygon(c(x, rev(x)), c(h, rep(ylim[1], length(h))),
-              col = "#1d3a4d", border = NA)
-      lines(x, h, col = "#38bdf8", lwd = 2)
-      points(length(h), h[length(h)], col = "#7dd3fc", pch = 19, cex = 0.9)
+              col = col$fill, border = NA)
+      lines(x, h, col = col$line, lwd = 2)
+      points(length(h), h[length(h)], col = col$tip, pch = 19, cex = 0.9)
       invisible(NULL)
     },
     bg = "transparent",
@@ -317,7 +332,7 @@ server <- function(input, output, session) {
   # Bookmarking: the interesting state lives in the browser, so hand it over
   # on save and push it back on restore. The raw inputs are excluded -- only
   # the compact snapshot below belongs in a shareable URL.
-  setBookmarkExclude(c("activity", "sim_state", "do_bookmark"))
+  setBookmarkExclude(c("activity", "sim_state", "do_bookmark", "theme"))
 
   observeEvent(input$do_bookmark, session$doBookmark())
 

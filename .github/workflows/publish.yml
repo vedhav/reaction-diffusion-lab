@@ -1,0 +1,17 @@
+name: publish
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Deploy to Connect
+        uses: posit-dev/connect-actions/deploy@main

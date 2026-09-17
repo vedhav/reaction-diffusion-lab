@@ -12,11 +12,51 @@
   --muted: #7b8a9e;
   --accent: #38bdf8;
   --accent-dim: rgba(56, 189, 248, 0.16);
+  --accent-bright: #7dd3fc;
+  --on-accent: #04121c;
   --amber: #fbbf24;
   --danger: #f87171;
+  --alive: #6ee7b7;
+  --alive-bg: rgba(16, 185, 129, 0.14);
+  --alive-line: rgba(110, 231, 183, 0.35);
+  --thumb: #e6f6ff;
+  --button-hover: #1b2636;
+  --toast-bg: rgba(10, 16, 26, 0.95);
+  --glow-a: #12233a;
+  --glow-b: #10202b;
+  --canvas-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 24px 70px rgba(0, 0, 0, 0.65);
   --radius: 12px;
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Day theme. Night is the default; rd.js sets data-theme="light" on <html>
+   and remembers the choice in localStorage. Everything below is a token
+   override -- no rule outside this block knows which theme is active. */
+:root[data-theme="light"] {
+  --bg: #f2f6fb;
+  --bg-soft: #ffffff;
+  --panel: #ffffff;
+  --panel-raised: #f7fafd;
+  --line: rgba(15, 23, 42, 0.10);
+  --line-strong: rgba(15, 23, 42, 0.20);
+  --text: #0f172a;
+  --muted: #56657a;
+  --accent: #0369a1;
+  --accent-dim: rgba(3, 105, 161, 0.12);
+  --accent-bright: #0284c7;
+  --on-accent: #f7fbff;
+  --amber: #b45309;
+  --danger: #b91c1c;
+  --alive: #047857;
+  --alive-bg: rgba(16, 185, 129, 0.12);
+  --alive-line: rgba(4, 120, 87, 0.30);
+  --thumb: #ffffff;
+  --button-hover: #e7eff8;
+  --toast-bg: rgba(255, 255, 255, 0.96);
+  --glow-a: #dce9f8;
+  --glow-b: #e4edf8;
+  --canvas-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08), 0 20px 50px rgba(15, 23, 42, 0.16);
 }
 
 * { box-sizing: border-box; }
@@ -28,14 +68,15 @@ html, body {
 
 body {
   background:
-    radial-gradient(1200px 700px at 15% -10%, #12233a 0%, transparent 60%),
-    radial-gradient(900px 600px at 100% 110%, #10202b 0%, transparent 55%),
+    radial-gradient(1200px 700px at 15% -10%, var(--glow-a) 0%, transparent 60%),
+    radial-gradient(900px 600px at 100% 110%, var(--glow-b) 0%, transparent 55%),
     var(--bg);
   color: var(--text);
   font-family: var(--sans);
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* --- shell -------------------------------------------------------------- */
@@ -107,9 +148,7 @@ body {
   transform: translate(-50%, -50%);
   border-radius: var(--radius);
   border: 1px solid var(--line-strong);
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.6),
-    0 24px 70px rgba(0, 0, 0, 0.65);
+  box-shadow: var(--canvas-shadow);
   cursor: crosshair;
   touch-action: none;
 }
@@ -215,7 +254,7 @@ body {
   width: 15px;
   height: 15px;
   border-radius: 50%;
-  background: #e6f6ff;
+  background: var(--thumb);
   border: 2px solid var(--accent);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
 }
@@ -224,7 +263,7 @@ body {
   width: 13px;
   height: 13px;
   border-radius: 50%;
-  background: #e6f6ff;
+  background: var(--thumb);
   border: 2px solid var(--accent);
 }
 
@@ -265,7 +304,7 @@ body {
 }
 
 .rd-button:hover {
-  background: #1b2636;
+  background: var(--button-hover);
   border-color: var(--accent);
 }
 
@@ -274,14 +313,14 @@ body {
 .rd-button-primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #04121c;
+  color: var(--on-accent);
   font-weight: 600;
   min-width: 78px;
 }
 
 .rd-button-primary:hover {
-  background: #7dd3fc;
-  border-color: #7dd3fc;
+  background: var(--accent-bright);
+  border-color: var(--accent-bright);
 }
 
 .rd-presets {
@@ -337,9 +376,9 @@ body {
 }
 
 .rd-verdict.is-alive {
-  color: #6ee7b7;
-  background: rgba(16, 185, 129, 0.14);
-  border: 1px solid rgba(110, 231, 183, 0.35);
+  color: var(--alive);
+  background: var(--alive-bg);
+  border: 1px solid var(--alive-line);
 }
 
 .rd-verdict.is-edge {
@@ -384,7 +423,7 @@ body {
   transform: translate(-50%, 12px);
   padding: 9px 16px;
   border-radius: 999px;
-  background: rgba(10, 16, 26, 0.95);
+  background: var(--toast-bg);
   border: 1px solid var(--line-strong);
   color: var(--text);
   font-size: 13px;

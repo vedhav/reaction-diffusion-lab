@@ -1,0 +1,6 @@
+# Local tooling caches, not part of the app
+graft/
+.playwright-mcp/
+rsconnect/
+.Rproj.user/
+.Rhistory
